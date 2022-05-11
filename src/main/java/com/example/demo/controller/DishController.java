@@ -1,18 +1,14 @@
 package com.example.demo.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.bean.Dish;
 import com.example.demo.common.R;
 import com.example.demo.dto.DishDto;
-import com.example.demo.service.DishFlavorService;
 import com.example.demo.service.DishService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.websocket.server.PathParam;
 import java.util.List;
 
 /**
@@ -68,7 +64,7 @@ public class DishController {
         return R.success("菜品信息更改成功！");
     }
 
-    //获取指定菜单分类下启售的菜品
+    //获取指定菜单分类下启售的菜品，使用缓存
     @GetMapping("/list")
     public R<List<DishDto>> getDish(Dish dish){
         log.info("查询菜单分类：{}下的菜品信息...", dish.getCategoryId());

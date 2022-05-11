@@ -8,7 +8,6 @@ import com.example.demo.bean.Category;
 import com.example.demo.bean.Dish;
 import com.example.demo.bean.DishFlavor;
 import com.example.demo.common.DiyException;
-import com.example.demo.common.R;
 import com.example.demo.dto.DishDto;
 import com.example.demo.mapper.DishMapper;
 import com.example.demo.service.CategoryService;
@@ -17,10 +16,14 @@ import com.example.demo.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +43,9 @@ public class DishServiceImpl
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     //操作了两张表，需要控制事务一致性：@Transactional，启动类：@EnableTransactionManagement
     @Override
     @Transactional
@@ -56,6 +62,11 @@ public class DishServiceImpl
             return item;
         }).collect(Collectors.toList());
         dishFlavorService.saveBatch(flavors);
+
+        //新增菜品后，需要清理该菜单分类下的缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
+        log.info("新增菜品信息，删除{}缓存",key);
     }
 
     @Override
@@ -136,11 +147,30 @@ public class DishServiceImpl
         }
         dishFlavorService.saveBatch(flavors);
 
+        //修改菜品后，需要清理该菜单分类下的缓存数据
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
+        log.info("菜品信息被修改，删除{}缓存",key);
     }
 
     //前端传来`categoryId`、`status`
     @Override
     public List<DishDto> getDishDtoByCategoryId(Dish dish) {
+        List<DishDto> dishDtos = null;
+
+        //每次只缓存一个分类下的菜品，因为页面只看得到一个分类下的数据
+        String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();//dish_1397844391040167938_1
+        //先从 redis 中获取缓存数据
+        dishDtos = (List<DishDto>) redisTemplate.opsForValue().get(key);
+
+        //若存在，直接返回，无需查询数据库
+        if(dishDtos != null){
+            log.info("直接查缓存");
+            return dishDtos;
+        }
+
+        //若不存在，再去数据库中查询，并且加入缓存
+        log.info("缓存中不存在，去查数据库");
         //先查询菜品基本信息
         QueryWrapper<Dish> dishQueryWrapper = new QueryWrapper<>();
         dishQueryWrapper.eq(dish.getCategoryId() != null, "category_id", dish.getCategoryId())
@@ -149,7 +179,7 @@ public class DishServiceImpl
         List<Dish> dishes = super.list(dishQueryWrapper);
 
         //再查询各菜品的口味信息
-        List<DishDto> dishDtos = dishes.stream().map((item) ->{
+        dishDtos = dishes.stream().map((item) ->{
             DishDto dishDto = new DishDto();
 
             BeanUtils.copyProperties(item, dishDto); //对象拷贝
@@ -163,6 +193,9 @@ public class DishServiceImpl
             dishDto.setFlavors(flavors);
             return dishDto;
         }).collect(Collectors.toList());
+
+        //将查询到的数据缓存到 redis
+        redisTemplate.opsForValue().set(key, dishDtos, 60, TimeUnit.MINUTES);
 
         return dishDtos;
     }
@@ -178,7 +211,7 @@ public class DishServiceImpl
 
         int count = super.count(queryWrapper); //计算出`1`的个数
         if(count > 0){
-            throw new DiyException("菜品正在售卖中，无法删删除");
+            throw new DiyException("菜品正在售卖中，无法删除");
         }else{
             //先删除菜品的基本信息 ->Dish
             super.removeByIds(ids);
@@ -187,6 +220,8 @@ public class DishServiceImpl
             QueryWrapper<DishFlavor> dishFlavorQueryWrapper = new QueryWrapper<>();
             dishFlavorQueryWrapper.in("dish_id", ids);
             dishFlavorService.remove(dishFlavorQueryWrapper);
+
+            //删除菜品后，需要清理该菜单分类下的缓存数据，让停售处理即可
         }
     }
 
@@ -201,5 +236,15 @@ public class DishServiceImpl
             dish.setStatus(status);
         }
         super.updateBatchById(dishes);
+
+        //修改菜品停售后，需要清理该菜单分类下的缓存数据
+        Set<String> keys = dishes.stream().map((item) ->{
+            String key = null;
+            Long categoryId = item.getCategoryId();//获取菜单分类id
+            key = "dish_" + categoryId + "_1";
+            return key;
+        }).collect(Collectors.toSet());
+        redisTemplate.delete(keys);
+        log.info("菜品信息被修改，删除{}缓存",keys.toString());
     }
 }

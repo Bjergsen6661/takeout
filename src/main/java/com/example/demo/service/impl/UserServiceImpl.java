@@ -37,10 +37,10 @@ public class UserServiceImpl
         //生成随机的6位验证码
         String code = ValidateCodeUtils.generateValidateCode(6).toString();
 
-        //调用第三方API短信服务 —— 前100次免费
-        SMSUtils smsUtils = new SMSUtils();
-        //您的验证码为：{1}，{2}分钟内有效，如非本人操作，请忽略本短信！
-        smsUtils.sendSms(phoneNum, code, "1");
+//        //调用第三方API短信服务 —— 前100次免费
+//        SMSUtils smsUtils = new SMSUtils();
+//        //您的验证码为：{1}，{2}分钟内有效，如非本人操作，请忽略本短信！
+//        smsUtils.sendSms(phoneNum, code, "1");
 
         //将获取到的验证码保存到redis，设置过期时间60s
         redisTemplate.opsForValue().set("code", code, 60, TimeUnit.SECONDS);
@@ -54,31 +54,8 @@ public class UserServiceImpl
         String code = map.get("code").toString();
 
         /************************ 默认验证码：123456 **************************/
-//
-//        if("123456".equals(code)){
-//            //若为新用户，则自动注册进user表中；老用户就无需操作
-//            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-//            queryWrapper.eq("phone", phone);
-//            User user = super.getOne(queryWrapper);
-//            if(user == null){
-//                user = new User();
-//                user.setPhone(phone);
-//                user.setStatus(1); //用户状态：正常(1)
-//                super.save(user);
-//            }
-//            //校验成功，即登陆成功（存入当前user到session，用于filter校验）
-//            session.setAttribute("user", user);
-//            return R.success(user);
-//        }else{
-//            return R.error("验证码错误，请重新输入...");
-//        }
 
-        /************************ 使用腾讯云发送短信验证码 **************************/
-
-        //获取redis中保存的验证码
-        String redisCode = (String) redisTemplate.opsForValue().get("code");
-
-        if(redisCode != null && redisCode.equals(code)){
+        if("123456".equals(code)){
             //若为新用户，则自动注册进user表中；老用户就无需操作
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("phone", phone);
@@ -93,8 +70,31 @@ public class UserServiceImpl
             session.setAttribute("user", user);
             return R.success(user);
         }else{
-            //校验失败，即登陆失败
             return R.error("验证码错误，请重新输入...");
         }
+
+        /************************ 使用腾讯云发送短信验证码 **************************/
+
+        //获取redis中保存的验证码
+//        String redisCode = (String) redisTemplate.opsForValue().get("code");
+//
+//        if(redisCode != null && redisCode.equals(code)){
+//            //若为新用户，则自动注册进user表中；老用户就无需操作
+//            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+//            queryWrapper.eq("phone", phone);
+//            User user = super.getOne(queryWrapper);
+//            if(user == null){
+//                user = new User();
+//                user.setPhone(phone);
+//                user.setStatus(1); //用户状态：正常(1)
+//                super.save(user);
+//            }
+//            //校验成功，即登陆成功（存入当前user到session，用于filter校验）
+//            session.setAttribute("user", user);
+//            return R.success(user);
+//        }else{
+//            //校验失败，即登陆失败
+//            return R.error("验证码错误，请重新输入...");
+//        }
     }
 }

@@ -14,11 +14,12 @@ import com.tencentcloudapi.sms.v20210111.models.*;
  */
 public class SMSUtils {
 
-    public static final String SECRETID = "AKIDjSv83i6D2bssb4HEuKUNzKPEl11kCNGt";
-    public static final String SECRETKEY = "NTIq77qITO2PbXCahX6OPZS3NREjxvc2";
-    public static final String APPID = "1400674857";
-    public static final String SIGNNAME = "造火箭的程序员";
-    public static final String TEMPLATEID = "1392901";
+
+    public static final String SECRETID = "xxx";
+    public static final String SECRETKEY = "xxx";
+    public static final String APPID = "xxx";
+    public static final String SIGNNAME = "xxx";
+    public static final String TEMPLATEID = "xxx";
 
     public void sendSms(String phone, String code, String ttl) {
         try{
