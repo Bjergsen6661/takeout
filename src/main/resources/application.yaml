@@ -8,6 +8,13 @@ spring:
       url: jdbc:mysql://localhost:3306/project_takeout?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: root
       password: root
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000   #单位ms —— 1小时
+      #      key-prefix: CACHE_      #给缓存key加前缀，不指定则分区名作为前缀
+      use-key-prefix: true    #结合key-prefix，true：使用前缀
+      cache-null-values: true #是否缓存空值，解决`缓存穿透`问题
 
 mybatis-plus:
   configuration:

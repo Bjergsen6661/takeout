@@ -17,10 +17,15 @@ import com.example.demo.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -40,9 +45,15 @@ public class SetmealServiceImpl
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    public static final String SETMEAL = "SETMEALS"; //分页查询菜品缓存
+
     //操作了两张表，需要控制事务一致性：@Transactional，启动类：@EnableTransactionManagement
     @Override
     @Transactional
+    @CacheEvict(value = "setmealCache", key = "#setmealDto.categoryId + '_1'") //setmealCache::1413386191767674881_1
     public void saveWithDishes(SetmealDto setmealDto) {
         //保存套餐基本信息 -> Setmeal
         super.save(setmealDto);
@@ -56,10 +67,28 @@ public class SetmealServiceImpl
         }
         setmealDishService.saveBatch(setmealDishes);
 
+        //新增套餐后，需要清理app菜单分类下的套餐缓存数据以及pc的分页数据
+        Set keys = redisTemplate.keys(SETMEAL + "_*");
+        redisTemplate.delete(keys);
+        log.info("新增菜品信息，删除{}缓存、{}缓存","setmealCache::" + setmealDto.getCategoryId() + "_1", keys.toString());
+
     }
 
     @Override
     public Page<SetmealDto> getpage(int pn, int pageSize, String name) {
+        Page<SetmealDto> SetmealDtoPage = null;
+
+        //先查缓存
+        SetmealDtoPage = (Page<SetmealDto>) redisTemplate.opsForValue().get(SETMEAL + "_" + pn + "_" + pageSize + "_" + name);
+
+        //若缓存中有，则使用缓存
+        if(SetmealDtoPage != null){
+            log.info("缓存中有分页套餐数据，使用缓存数据");
+            return SetmealDtoPage;
+        }
+
+        //若缓存中没有，查询数据库
+        log.info("缓存中没有分页套餐数据，查询数据库");
         //构建分页构造器
         Page<Setmeal> SetmealPage = new Page<>(pn, pageSize);
 
@@ -72,7 +101,7 @@ public class SetmealServiceImpl
 
         //此时还剩 categoryName 未付值，且页面传来的是 categoryId
         //对象拷贝
-        Page<SetmealDto> SetmealDtoPage = new Page<>();
+        SetmealDtoPage = new Page<>();
         BeanUtils.copyProperties(SetmealPage, SetmealDtoPage, "records");
 
         //获取页面数据records，将categoryName附上值
@@ -93,6 +122,10 @@ public class SetmealServiceImpl
         }).collect(Collectors.toList());
 
         SetmealDtoPage.setRecords(setmealDtoRecords);
+
+        //将数据库查询到的数据存入缓存，ttl：24h
+        redisTemplate.opsForValue().set(SETMEAL + "_" + pn + "_" + pageSize + "_" + name, SetmealDtoPage, 24, TimeUnit.HOURS);
+
         return SetmealDtoPage;
     }
 
@@ -115,6 +148,7 @@ public class SetmealServiceImpl
     }
 
     @Override
+    @CacheEvict(value = "setmealCache", key = "#setmealDto.categoryId + '_1'") //setmealCache::1413386191767674881_1
     public void updateSetmealById(SetmealDto setmealDto) {
         //修改套餐基本信息 -> SetmealDish
         super.updateById(setmealDto);
@@ -132,9 +166,15 @@ public class SetmealServiceImpl
             dish.setSetmealId(id);
         }
         setmealDishService.saveBatch(dishes);
+
+        //修改套餐后，需要清理app菜单分类下的套餐缓存数据以及pc的分页数据
+        Set keys = redisTemplate.keys(SETMEAL + "_*");
+        redisTemplate.delete(keys);
+        log.info("新增菜品信息，删除{}缓存、{}缓存","setmealCache::" + setmealDto.getCategoryId() + "_1", keys.toString());
     }
 
     @Override
+    @Cacheable(value = "setmealCache", key = "#setmeal.categoryId + '_' + #setmeal.status")
     public List<Setmeal> getSetmealsByCategoryId(Setmeal setmeal) {
         QueryWrapper<Setmeal> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(setmeal.getCategoryId() != null, "category_id", setmeal.getCategoryId())
@@ -165,6 +205,10 @@ public class SetmealServiceImpl
             QueryWrapper<SetmealDish> setmealDishQueryWrapper = new QueryWrapper<>();
             setmealDishQueryWrapper.in("setmeal_id", ids);
             setmealDishService.remove(setmealDishQueryWrapper);
+
+            //删除菜品后，需要清理该菜单分类下的缓存数据
+            Set keys = redisTemplate.keys(SETMEAL + "_*");
+            redisTemplate.delete(keys);
         }
     }
 
@@ -179,6 +223,19 @@ public class SetmealServiceImpl
             setmeal.setStatus(status);
         }
         super.updateBatchById(setmeals);
+
+        //修改套餐停售后，需要清理app菜单分类下的套餐缓存数据以及pc的分页数据
+        Set<String> keys = setmeals.stream().map((item) ->{
+            String key = null;
+            Long categoryId = item.getCategoryId();//获取菜单分类id
+            key = "setmealCache::" + categoryId + "_1";
+            return key;
+        }).collect(Collectors.toSet());
+
+        redisTemplate.delete(keys);
+        Set pcKeys = redisTemplate.keys(SETMEAL + "_*");
+        redisTemplate.delete(pcKeys);
+        log.info("修改菜品状态信息，删除{}缓存、{}缓存",keys.toString(), pcKeys.toString());
     }
 
 

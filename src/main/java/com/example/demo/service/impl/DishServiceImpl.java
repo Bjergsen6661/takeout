@@ -20,7 +20,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +45,8 @@ public class DishServiceImpl
     @Autowired
     private RedisTemplate redisTemplate;
 
+    public static final String DISH = "DISHES"; //分页查询菜品缓存
+
     //操作了两张表，需要控制事务一致性：@Transactional，启动类：@EnableTransactionManagement
     @Override
     @Transactional
@@ -63,14 +64,29 @@ public class DishServiceImpl
         }).collect(Collectors.toList());
         dishFlavorService.saveBatch(flavors);
 
-        //新增菜品后，需要清理该菜单分类下的缓存数据
+        //新增菜品后，需要清理app菜单分类下的菜品缓存数据以及pc的分页数据
         String key = "dish_" + dishDto.getCategoryId() + "_1";
         redisTemplate.delete(key);
-        log.info("新增菜品信息，删除{}缓存",key);
+        Set keys = redisTemplate.keys(DISH + "_*");
+        redisTemplate.delete(keys);
+        log.info("新增菜品信息，删除{}缓存、{}缓存",key, keys.toString());
     }
 
     @Override
     public Page<DishDto> getDishDtoPage(int pn, int pageSize, String name) {
+        Page<DishDto> dishDtoPage = null;
+
+        //先查缓存
+        dishDtoPage = (Page<DishDto>) redisTemplate.opsForValue().get(DISH + "_" + pn + "_" + pageSize + "_" + name);
+
+        //若缓存中有，则使用缓存
+        if(dishDtoPage != null){
+            log.info("缓存中有分页菜品数据，使用缓存数据");
+            return dishDtoPage;
+        }
+
+        //若缓存中没有，查询数据库
+        log.info("缓存中没有分页菜品数据，查询数据库");
         //构建分页构造器
         Page<Dish> dishPage = new Page<>(pn, pageSize);
 
@@ -83,7 +99,7 @@ public class DishServiceImpl
 
         //此时还剩 categoryName 未付值，且页面传来的是 categoryId
         //对象拷贝
-        Page<DishDto> dishDtoPage = new Page<>();
+        dishDtoPage = new Page<>();
         BeanUtils.copyProperties(dishPage, dishDtoPage, "records");
 
         //获取页面数据records
@@ -106,6 +122,9 @@ public class DishServiceImpl
         }).collect(Collectors.toList());
 
         dishDtoPage.setRecords(dishDtoRecords);
+
+        //将数据库查询到的数据存入缓存，ttl：24h
+        redisTemplate.opsForValue().set(DISH + "_" + pn + "_" + pageSize + "_" + name, dishDtoPage, 24, TimeUnit.HOURS);
         return dishDtoPage;
     }
 
@@ -147,10 +166,12 @@ public class DishServiceImpl
         }
         dishFlavorService.saveBatch(flavors);
 
-        //修改菜品后，需要清理该菜单分类下的缓存数据
+        //修改菜品后，需要清理app菜单分类下的菜品缓存数据以及pc的分页数据
         String key = "dish_" + dishDto.getCategoryId() + "_1";
         redisTemplate.delete(key);
-        log.info("菜品信息被修改，删除{}缓存",key);
+        Set keys = redisTemplate.keys(DISH + "_*");
+        redisTemplate.delete(keys);
+        log.info("修改菜品信息，删除{}缓存、{}缓存",key, keys.toString());
     }
 
     //前端传来`categoryId`、`status`
@@ -165,12 +186,12 @@ public class DishServiceImpl
 
         //若存在，直接返回，无需查询数据库
         if(dishDtos != null){
-            log.info("直接查缓存");
+            log.info("app菜品分类已在缓存，通过缓存获取");
             return dishDtos;
         }
 
         //若不存在，再去数据库中查询，并且加入缓存
-        log.info("缓存中不存在，去查数据库");
+        log.info("app菜单分类下缓存中不存在，去查数据库");
         //先查询菜品基本信息
         QueryWrapper<Dish> dishQueryWrapper = new QueryWrapper<>();
         dishQueryWrapper.eq(dish.getCategoryId() != null, "category_id", dish.getCategoryId())
@@ -221,7 +242,9 @@ public class DishServiceImpl
             dishFlavorQueryWrapper.in("dish_id", ids);
             dishFlavorService.remove(dishFlavorQueryWrapper);
 
-            //删除菜品后，需要清理该菜单分类下的缓存数据，让停售处理即可
+            //删除菜品后，需要清理该菜单分类下的缓存数据
+            Set keys = redisTemplate.keys(DISH + "_*");
+            redisTemplate.delete(keys);
         }
     }
 
@@ -237,14 +260,17 @@ public class DishServiceImpl
         }
         super.updateBatchById(dishes);
 
-        //修改菜品停售后，需要清理该菜单分类下的缓存数据
+        //修改菜品停售后，需要清理app菜单分类下的菜品缓存数据以及pc的分页数据
         Set<String> keys = dishes.stream().map((item) ->{
             String key = null;
             Long categoryId = item.getCategoryId();//获取菜单分类id
             key = "dish_" + categoryId + "_1";
             return key;
         }).collect(Collectors.toSet());
+
         redisTemplate.delete(keys);
-        log.info("菜品信息被修改，删除{}缓存",keys.toString());
+        Set pcKeys = redisTemplate.keys(DISH + "_*");
+        redisTemplate.delete(pcKeys);
+        log.info("修改菜品状态信息，删除{}缓存、{}缓存",keys, pcKeys.toString());
     }
 }
