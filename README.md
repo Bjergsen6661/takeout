@@ -6,12 +6,6 @@
 - 简单的外卖系统，包括前台用户下单系统和后台管理系统。前台用户下单系统包括菜单展示、购物车、个人地址信息等模块；后台管理系统包括员工管理、分类管理、菜品管理、套餐管理和订单明细模块。
 - 前台使用短信验证码方式进行登录，后台使用账号密码方式进行登录验证。
 
-#### 项目演示
-
-##### 前台用户下单系统
-
-##### 后台管理系统
-
 #### 技术选型
 
 - 核心框架：Spring Boot、MyBatis-Plus
@@ -40,9 +34,16 @@
 | Mysql | 8.0.24        | [https://www.mysql.com/](https://gitee.com/link?target=https%3A%2F%2Fwww.mysql.com%2F) |
 | Redis | 6.2.6         | [https://redis.io/download](https://gitee.com/link?target=https%3A%2F%2Fredis.io%2Fdownload) |
 
+#### 项目演示
+
+##### 前台用户下单系统
+
+##### 后台管理系统
+
 #### 参与贡献
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+1.  新建 master、v2.0、v3.0_读写分离分支
+    - master：主分支，最终项目保存模型
+    - v2.0：主要用于编辑项目，经过检查后合并入master分支
+    - v3.0_读写分离，独立分支，用于实现读写分离功能
+2.  提交代码
