@@ -1,22 +1,44 @@
 # takeout
 
-#### 介绍
-外卖项目开发
+#### 项目介绍
 
-#### 软件架构
-软件架构说明
+- 使用SSM框架搭建，实现CURD功能
+- 简单的外卖系统，包括前台用户下单系统和后台管理系统。前台用户下单系统包括菜单展示、购物车、个人地址信息等模块；后台管理系统包括员工管理、分类管理、菜品管理、套餐管理和订单明细模块。
+- 前台使用短信验证码方式进行登录，后台使用账号密码方式进行登录验证。
 
+#### 项目演示
 
-#### 安装教程
+##### 前台用户下单系统
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+##### 后台管理系统
 
-#### 使用说明
+#### 技术选型
 
-1.  xxxx
-2.  xxxx
+- 核心框架：Spring Boot、MyBatis-Plus
+- 数据库：Mysql
+- 数据库连接池：Druid
+- 缓存：Redis、Spring Cache
+- 前端技术：Vue.js、Element
+- 第三方服务：腾讯云短信服务
+
+#### 环境搭建
+
+##### 开发工具
+
+| 工具                   | 版本     | 官网                                                         |
+| ---------------------- | -------- | ------------------------------------------------------------ |
+| IDEA                   | 2020.3.x | [https://www.jetbrains.com/idea/download](https://gitee.com/link?target=https%3A%2F%2Fwww.jetbrains.com%2Fidea%2Fdownload) |
+| Typora                 | 0.11.13  | [https://typora.io/](https://gitee.com/link?target=https%3A%2F%2Ftypora.io%2F) |
+| SQLyog                 | 11.2.5   | [https://sqlyog.en.softonic.com/](https://gitee.com/link?target=https%3A%2F%2Fsqlyog.en.softonic.com%2F) |
+| VMware Workstation Pro | 15.5.1   | https://www.vmware.com/                                      |
+
+##### 开发环境
+
+| 工具  | 版本号        | 下载                                                         |
+| ----- | ------------- | ------------------------------------------------------------ |
+| JDK   | 13(8以上即可) | https://www.oracle.com/java/technologies/downloads/          |
+| Mysql | 8.0.24        | [https://www.mysql.com/](https://gitee.com/link?target=https%3A%2F%2Fwww.mysql.com%2F) |
+| Redis | 6.2.6         | [https://redis.io/download](https://gitee.com/link?target=https%3A%2F%2Fredis.io%2Fdownload) |
 
 #### 参与贡献
 
@@ -24,13 +46,3 @@
 2.  新建 Feat_xxx 分支
 3.  提交代码
 4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)

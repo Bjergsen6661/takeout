@@ -58,13 +58,13 @@ public class CommonServiceImpl implements CommonService {
             //通过输入流读取文件内容
             fileInputStream = new FileInputStream(new File(filePath + imgName));
 
-            //通过输出流将文件写回浏览器
-            outputStream = response.getOutputStream();
+            //通过输出流将文件写回浏览器response
+            outputStream = response.getOutputStream(); //使用response获得字节输出
             response.setContentType("image/jpeg"); //图片文件
 
-            //写操作
-            byte[] buffer = new byte[1024];
-            int len; //记录每次读取的字节的个数
+            //读写操作
+            byte[] buffer = new byte[1024]; //记录每次读取的字节的个数
+            int len;
             while((len = fileInputStream.read(buffer)) != -1){
                 outputStream.write(buffer,0,len);
                 outputStream.flush();
@@ -72,7 +72,7 @@ public class CommonServiceImpl implements CommonService {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            //4.关闭流资源
+            //关闭流资源
             if(outputStream != null) {
                 try {
                     outputStream.close();

@@ -61,17 +61,10 @@
       >
         <div>
           <el-form-item label="菜品名称:" prop="name">
-            <el-input
-              v-model="ruleForm.name"
-              placeholder="请填写菜品名称"
-              maxlength="20"
-            />
+            <el-input v-model="ruleForm.name" placeholder="请填写菜品名称" maxlength="20"/>
           </el-form-item>
           <el-form-item label="菜品分类:" prop="categoryId">
-            <el-select
-              v-model="ruleForm.categoryId"
-              placeholder="请选择菜品分类"
-            >
+            <el-select v-model="ruleForm.categoryId" placeholder="请选择菜品分类">
               <el-option v-for="(item,index) in dishList" :key="index" :label="item.name" :value="item.id" />
             </el-select>
           </el-form-item>
@@ -85,24 +78,13 @@
         <el-form-item label="口味做法配置:">
           <el-form-item>
             <div class="flavorBox">
-              <span
-                v-if="dishFlavors.length == 0"
-                class="addBut"
-                @click="addFlavore"
-              > + 添加口味</span>
-              <div
-                v-if="dishFlavors.length != 0"
-                class="flavor"
-              >
+              <span v-if="dishFlavors.length == 0" class="addBut" @click="addFlavore"> + 添加口味</span>
+              <div v-if="dishFlavors.length != 0" class="flavor">
                 <div class="title">
                   <span>口味名（3个字内）</span><span>口味标签（输入标签回车添加）</span>
                 </div>
                 <div class="cont">
-                  <div
-                    v-for="(item, index) in dishFlavors"
-                    :key="index"
-                    class="items"
-                  >
+                  <div v-for="(item, index) in dishFlavors" :key="index" class="items">
                     <div class="itTit">
                       <!-- <SelectInput
                         :dish-flavors-data="dishFlavorsData"
@@ -173,11 +155,7 @@
 
         <!--  图片上传组件-->
         <div>
-          <el-form-item
-            label="菜品图片:"
-            prop="region"
-            class="uploadImg"
-          >
+          <el-form-item label="菜品图片:" prop="region" class="uploadImg">
             <el-upload
               class="avatar-uploader"
               action="/common/upload"
@@ -187,6 +165,7 @@
               ref="upload"
             >
               <!--  显示图片-->
+              <!--  :src 下放`base64格式`或者放`require(本地图片路径）`-->
               <img v-if="imageUrl" :src="imageUrl" class="avatar"></img>
               <i v-else class="el-icon-plus avatar-uploader-icon"></i>
             </el-upload>
@@ -491,12 +470,12 @@
               }
             })
           },
-
-          handleAvatarSuccess (response, file, fileList) {
+          handleAvatarSuccess (response, file, fileList) { //response，成功回调upload的返回值
             // 拼接download接口预览
             if(response.code === 0 && response.msg === '未登录'){
               window.top.location.href = '/backend/page/login/login.html'
             }else{
+              console.log("文件名：" + response.data)
               this.imageUrl = `/common/download?name=${response.data}`
               this.ruleForm.image = response.data
             }
