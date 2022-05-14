@@ -37,8 +37,10 @@
 #### 项目演示
 
 ##### 前台用户下单系统
+![粤菜分类演示图](src/main/resources/imgs/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220514213717.png)
 
 ##### 后台管理系统
+![菜品管理演示图](src/main/resources/imgs/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20220514213738.png)
 
 #### 参与贡献
 
